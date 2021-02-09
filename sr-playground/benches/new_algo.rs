@@ -1,5 +1,3 @@
-
-
 #[macro_use]
 extern crate bencher;
 
@@ -7,7 +5,7 @@ use bencher::Bencher;
 use sr_playground::sketch::Sketch;
 
 fn create_sketch(elements: impl IntoIterator<Item = u64>, capacity: usize) -> Sketch {
-    let mut sketch = Sketch::new( capacity);
+    let mut sketch = Sketch::new(capacity);
     for item in elements.into_iter() {
         sketch.add(item);
     }
@@ -45,11 +43,13 @@ pub fn recover_bench_1e6_1e6(bench: &mut Bencher) {
 }
 
 pub fn recover_bench(bench: &mut Bencher, count: usize, total: u64) {
-
-    let coef = if count < 10000 { 6 } else {3};
+    let coef = if count < 10000 { 3 } else { 3 };
 
     let a = create_sketch(0..total, coef * count);
-    let b = create_sketch(0 + (count / 2) as u64..total + (count / 2) as u64, coef * count);
+    let b = create_sketch(
+        0 + (count / 2) as u64..total + (count / 2) as u64,
+        coef * count,
+    );
     bench.iter(|| {
         let mut a = a.clone();
         a.merge(&b);

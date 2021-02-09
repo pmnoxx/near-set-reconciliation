@@ -10,10 +10,6 @@ edition = "2018"
 minisketch-rs = "0.1.9"
 
 [[bench]]
-name = "graph"
-harness = false
-
-[[bench]]
 name = "simple"
 harness = false
 

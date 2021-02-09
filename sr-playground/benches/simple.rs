@@ -1,5 +1,3 @@
-
-
 #[macro_use]
 extern crate bencher;
 
@@ -20,8 +18,8 @@ fn create_sketch_alice() -> Result<Minisketch, MinisketchError> {
     //let set = 3_000_000..4_000_000;
     let set = 1000000_3_00000u64..1000000_301000u64;
     //println!(
-        //"Alice's set: {:?}",
-        //set.clone().into_iter().collect::<Vec<_>>()
+    //"Alice's set: {:?}",
+    //set.clone().into_iter().collect::<Vec<_>>()
     //);
 
     Ok(create_sketch(set)?)
@@ -31,8 +29,8 @@ fn create_sketch_bob() -> Result<Minisketch, MinisketchError> {
     // let set = 3_001_000..4_001_000;
     let set = 1000000_3_00200..1000000_3_01200u64;
     //println!(
-        //"Bob's set: {:?}",
-        //set.clone().into_iter().collect::<Vec<_>>()
+    //"Bob's set: {:?}",
+    //set.clone().into_iter().collect::<Vec<_>>()
     //);
 
     Ok(create_sketch(set)?)
@@ -58,11 +56,10 @@ fn reconcile_with_bob(msg_alice: &[u8]) -> Result<(), MinisketchError> {
     // Sort differences since they may come in arbitrary order from Minisketch::decode()
     let mut differences = Vec::from(&differences[..]);
     differences.sort();
-
-/*    for (i, diff) in differences.iter().enumerate() {
-        println!("Difference #{}: {}", (i + 1), diff);
-    }
- */
+    /*    for (i, diff) in differences.iter().enumerate() {
+           println!("Difference #{}: {}", (i + 1), diff);
+       }
+    */
     assert_eq!(differences[0], 1000000_3_00000);
     assert_eq!(differences[1], 1000000_3_00001);
     assert_eq!(differences[2], 1000000_3_00002);
@@ -93,15 +90,11 @@ pub fn create_sketch_bench(bench: &mut Bencher) {
     });
 }
 
-pub fn nothing(bench: &mut Bencher) {
-}
+pub fn nothing(bench: &mut Bencher) {}
 
 benchmark_group!(
-    benches,
-    nothing
-    // # simple_sketch,
-    //create_sketch_bench
+    benches, nothing // # simple_sketch,
+            //create_sketch_bench
 );
 
 benchmark_main!(benches);
-

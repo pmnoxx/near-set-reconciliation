@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-const NUM_HASHERS: usize = 4;
+const NUM_HASHERS: usize = 3;
 
 #[derive(Default, Clone, Debug)]
 struct Elem {
@@ -36,7 +36,7 @@ pub struct Sketch {
 }
 
 impl Sketch {
-    pub fn new(capacity: usize) -> Self{
+    pub fn new(capacity: usize) -> Self {
         Self {
             capacity,
             data: vec![Elem::default(); capacity],
@@ -52,7 +52,7 @@ impl Sketch {
     }
 
     fn compute_hash(elem: u64) -> u64 {
-        let mut h =  DefaultHasher::new();
+        let mut h = DefaultHasher::new();
         elem.hash(&mut h);
         h.finish()
     }
@@ -78,7 +78,6 @@ impl Sketch {
             to_check.push(i);
 
             while let Some(i) = to_check.pop() {
-
                 if !self.data[i].is_one() {
                     continue;
                 }
@@ -94,43 +93,47 @@ impl Sketch {
         }
         for i in 0..self.capacity {
             if self.data[i].count != 0 {
-                return Err("unable to recover result")
+                return Err("unable to recover result");
             }
         }
         Ok(result)
     }
 
-    // TODO: how do we remove code duplication?
-    fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
+    fn generate_idx(&mut self, elem: u64, elem_hash: u64) -> Vec<usize> {
+        let mut result: Vec<usize> = Vec::with_capacity(NUM_HASHERS);
+        result.push((elem as usize % self.capacity) as usize);
         let mut cur_hash = elem_hash;
 
-        for i in 0..NUM_HASHERS {
-            let pos = (cur_hash as usize % self.capacity) as usize;
-            self.data[pos].adjust(elem, elem_hash, count);
+        for _ in 1..NUM_HASHERS {
+            let mut pos = (cur_hash as usize % self.capacity) as usize;
+            while result.contains(&pos) {
+                cur_hash = Self::compute_hash(cur_hash);
+                pos = (cur_hash as usize % self.capacity) as usize;
+            }
+            result.push(pos);
+        }
+        result
+    }
 
+    // TODO: how do we remove code duplication?
+    fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
+        let pos_list = self.generate_idx(elem, elem_hash);
+
+        for (i, &pos) in pos_list.iter().enumerate() {
+            self.data[pos].adjust(elem, elem_hash, count);
             if i != 0 {
                 queue.push(pos);
             }
-
-            if i == NUM_HASHERS - 1 {
-                break;
-            }
-            cur_hash = Self::compute_hash(cur_hash);
         }
     }
 
     fn adjust_value(&mut self, elem: u64, count: i32) {
         let elem_hash = Self::compute_hash(elem);
-        let mut cur_hash = elem_hash;
 
-        for i in 0..NUM_HASHERS {
-            let pos = (cur_hash as usize % self.capacity) as usize;
+        let pos_list = self.generate_idx(elem, elem_hash);
+
+        for pos in pos_list {
             self.data[pos].adjust(elem, elem_hash, count);
-
-            if i == NUM_HASHERS - 1 {
-                break;
-            }
-            cur_hash = Self::compute_hash(cur_hash);
         }
     }
 }
@@ -140,7 +143,7 @@ mod tests {
     use crate::sketch::Sketch;
 
     fn create_sketch(elements: impl IntoIterator<Item = u64>) -> Sketch {
-        let mut sketch = Sketch::new( 400);
+        let mut sketch = Sketch::new(400);
         for item in elements.into_iter() {
             sketch.add(item);
         }
