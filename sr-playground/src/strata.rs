@@ -1,15 +1,15 @@
-use crate::sketch::Sketch;
+use crate::blt::BLT;
 
 #[derive(Clone)]
 struct Strata {
-    ibf: Vec<Sketch>,
+    ibf: Vec<BLT>,
 }
 
 impl Strata {
     fn new() -> Self {
         let mut ibf = Vec::with_capacity(32);
         for _ in 0..32 {
-            ibf.push(Sketch::new(80))
+            ibf.push(BLT::new(80, 0))
         }
         Self { ibf }
     }
@@ -34,7 +34,7 @@ impl Strata {
     }
 
     fn add(&mut self, elem: u64) {
-        let hash = Sketch::compute_hash(elem);
+        let hash = self.ibf[0].compute_hash(elem);
 
         for i in 0..32 {
             if (hash & (1 << i)) != 0 {
@@ -45,7 +45,7 @@ impl Strata {
     }
 
     fn remove(&mut self, elem: u64) {
-        let hash = Sketch::compute_hash(elem);
+        let hash = self.ibf[0].compute_hash(elem);
 
         for i in 0..32 {
             if (hash & (1 << i)) != 0 {
@@ -61,7 +61,7 @@ mod tests {
     use crate::strata::Strata;
 
     #[test]
-    fn create_sketch_alice() {
+    fn create_create_strata() {
         let mut a = Strata::new();
         let mut b = Strata::new();
 

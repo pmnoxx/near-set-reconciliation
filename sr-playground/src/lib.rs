@@ -1,2 +1,2 @@
-pub mod sketch;
+pub mod blt;
 pub mod strata;

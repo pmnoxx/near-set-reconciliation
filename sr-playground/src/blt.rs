@@ -29,17 +29,22 @@ impl Elem {
 }
 
 #[derive(Clone)]
-pub struct Sketch {
-    // maybe make this into bits?
+pub struct BLT {
     capacity: usize,
     data: Vec<Elem>,
+    seed: u64,
+    hasher: DefaultHasher,
 }
 
-impl Sketch {
-    pub fn new(capacity: usize) -> Self {
+impl BLT {
+    pub fn new(capacity: usize, seed: u64) -> Self {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(seed);
         Self {
             capacity,
             data: vec![Elem::default(); capacity],
+            seed,
+            hasher,
         }
     }
 
@@ -51,8 +56,8 @@ impl Sketch {
         self.adjust(elem, -1)
     }
 
-    pub fn compute_hash(elem: u64) -> u64 {
-        let mut h = DefaultHasher::new();
+    pub fn compute_hash(&self, elem: u64) -> u64 {
+        let mut h = self.hasher.clone();
         elem.hash(&mut h);
         h.finish()
     }
@@ -61,8 +66,9 @@ impl Sketch {
         self.adjust_value(elem, count)
     }
 
-    pub fn merge(&mut self, rhs: &Sketch) {
+    pub fn merge(&mut self, rhs: &BLT) {
         assert_eq!(self.capacity, rhs.capacity);
+        assert_eq!(self.seed, rhs.seed);
         for i in 0..self.capacity {
             self.data[i].merge(&rhs.data[i]);
         }
@@ -82,7 +88,7 @@ impl Sketch {
                     continue;
                 }
                 let elem = self.data[i].xor_elem;
-                let elem_hash = Self::compute_hash(elem);
+                let elem_hash = self.compute_hash(elem);
                 if elem_hash != self.data[i].xor_hash {
                     continue;
                 }
@@ -107,7 +113,7 @@ impl Sketch {
         for _ in 1..NUM_HASHERS {
             let mut pos = (cur_hash as usize % self.capacity) as usize;
             while result.contains(&pos) {
-                cur_hash = Self::compute_hash(cur_hash);
+                cur_hash = self.compute_hash(cur_hash);
                 pos = (cur_hash as usize % self.capacity) as usize;
             }
             result.push(pos);
@@ -128,7 +134,7 @@ impl Sketch {
     }
 
     fn adjust_value(&mut self, elem: u64, count: i32) {
-        let elem_hash = Self::compute_hash(elem);
+        let elem_hash = self.compute_hash(elem);
 
         let pos_list = self.generate_idx(elem, elem_hash);
 
@@ -140,10 +146,10 @@ impl Sketch {
 
 #[cfg(test)]
 mod tests {
-    use crate::sketch::Sketch;
+    use crate::blt::BLT;
 
-    fn create_sketch(elements: impl IntoIterator<Item = u64>, capacity: usize) -> Sketch {
-        let mut sketch = Sketch::new(capacity);
+    fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize) -> BLT {
+        let mut sketch = BLT::new(capacity, 0);
         for item in elements.into_iter() {
             sketch.add(item);
         }
@@ -151,9 +157,9 @@ mod tests {
     }
 
     #[test]
-    fn create_sketch_alice() {
+    fn create_blt_test() {
         let set = 1000000_3_00000u64..1000000_301000u64;
 
-        assert_eq!(1000, create_sketch(set, 2048).recover().unwrap().len())
+        assert_eq!(1000, create_blt(set, 2048).recover().unwrap().len())
     }
 }

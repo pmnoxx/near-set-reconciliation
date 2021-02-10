@@ -2,19 +2,19 @@
 extern crate bencher;
 
 use bencher::Bencher;
-use sr_playground::sketch::Sketch;
+use sr_playground::blt::BLT;
 
-fn create_sketch(elements: impl IntoIterator<Item = u64>, capacity: usize) -> Sketch {
-    let mut sketch = Sketch::new(capacity);
+fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize) -> BLT {
+    let mut blt = BLT::new(capacity, 11);
     for item in elements.into_iter() {
-        sketch.add(item);
+        blt.add(item);
     }
-    sketch
+    blt
 }
 
-pub fn create_sketch_bench(bench: &mut Bencher) {
+pub fn create_blt_bench(bench: &mut Bencher) {
     bench.iter(|| {
-        let _ = create_sketch(0..1000000u64, 1024);
+        let _ = create_blt(0..1000000u64, 1024);
     });
 }
 
@@ -45,8 +45,8 @@ pub fn recover_bench_1e6_1e6(bench: &mut Bencher) {
 pub fn recover_bench(bench: &mut Bencher, count: usize, total: u64) {
     let coef = if count < 10000 { 3 } else { 3 };
 
-    let a = create_sketch(0..total, coef * count);
-    let b = create_sketch(
+    let a = create_blt(0..total, coef * count);
+    let b = create_blt(
         0 + (count / 2) as u64..total + (count / 2) as u64,
         coef * count,
     );
@@ -61,7 +61,7 @@ pub fn recover_bench(bench: &mut Bencher, count: usize, total: u64) {
 
 benchmark_group!(
     benches,
-    create_sketch_bench,
+    create_blt_bench,
     recover_bench_1e1_1e6,
     recover_bench_1e2_1e6,
     recover_bench_1e3_1e6,
