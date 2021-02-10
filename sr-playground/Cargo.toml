@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 minisketch-rs = "0.1.9"
+ahash = "0.6.3"
 
 [[bench]]
 name = "simple"

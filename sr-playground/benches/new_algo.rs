@@ -4,8 +4,8 @@ extern crate bencher;
 use bencher::Bencher;
 use sr_playground::blt::BLT;
 
-fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize) -> BLT {
-    let mut blt = BLT::new(capacity, 11);
+fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize, seed: usize) -> BLT {
+    let mut blt = BLT::new(capacity, seed as u64);
     for item in elements.into_iter() {
         blt.add(item);
     }
@@ -13,8 +13,10 @@ fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize) -> BLT {
 }
 
 pub fn create_blt_bench(bench: &mut Bencher) {
+    let mut seed = 0;
     bench.iter(|| {
-        let _ = create_blt(0..1000000u64, 1024);
+        let _ = create_blt(0..1000000u64, 1024, seed);
+        seed += 1;
     });
 }
 
@@ -43,12 +45,22 @@ pub fn recover_bench_1e6_1e6(bench: &mut Bencher) {
 }
 
 pub fn recover_bench(bench: &mut Bencher, count: usize, total: u64) {
-    let coef = if count < 10000 { 3 } else { 3 };
+    let coef = if count <= 100 {
+        3.0
+    } else {
+        if count <= 1000 {
+            2.0
+        } else {
+            1.5
+        }
+    };
 
-    let a = create_blt(0..total, coef * count);
+    let capacity = (coef * (count as f64)) as usize;
+    let a = create_blt(0..total, capacity, 11);
     let b = create_blt(
         0 + (count / 2) as u64..total + (count / 2) as u64,
-        coef * count,
+        capacity,
+        11,
     );
     bench.iter(|| {
         let mut a = a.clone();
@@ -66,8 +78,8 @@ benchmark_group!(
     recover_bench_1e2_1e6,
     recover_bench_1e3_1e6,
     recover_bench_1e4_1e6,
-    //recover_bench_1e5_1e6,
-    //recover_bench_1e6_1e6
+    recover_bench_1e5_1e6,
+    recover_bench_1e6_1e6
 );
 
 benchmark_main!(benches);

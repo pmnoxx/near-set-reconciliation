@@ -1,5 +1,6 @@
+use ahash::AHasher;
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use std::hash::{BuildHasher, Hash, Hasher};
 
 const NUM_HASHERS: usize = 3;
 
@@ -34,11 +35,13 @@ pub struct BLT {
     data: Vec<Elem>,
     seed: u64,
     hasher: DefaultHasher,
+    // hasher: AHasher,
 }
 
 impl BLT {
     pub fn new(capacity: usize, seed: u64) -> Self {
         let mut hasher = DefaultHasher::new();
+        // let mut hasher = ahash::RandomState::new().build_hasher(); // #hasher,
         hasher.write_u64(seed);
         Self {
             capacity,
@@ -58,7 +61,7 @@ impl BLT {
 
     pub fn compute_hash(&self, elem: u64) -> u64 {
         let mut h = self.hasher.clone();
-        elem.hash(&mut h);
+        h.write_u64(elem);
         h.finish()
     }
 
@@ -99,6 +102,16 @@ impl BLT {
         }
         for i in 0..self.capacity {
             if self.data[i].count != 0 {
+                for i in 0..self.capacity {
+                    if self.data[i].count != 0 {
+                        println!(
+                            "{} {:?} {}",
+                            i,
+                            self.data[i],
+                            self.compute_hash(self.data[i].xor_elem)
+                        );
+                    }
+                }
                 return Err("unable to recover result");
             }
         }
@@ -125,11 +138,9 @@ impl BLT {
     fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
         let pos_list = self.generate_idx(elem, elem_hash);
 
-        for (i, &pos) in pos_list.iter().enumerate() {
+        for &pos in pos_list.iter() {
             self.data[pos].adjust(elem, elem_hash, count);
-            if i != 0 {
-                queue.push(pos);
-            }
+            queue.push(pos);
         }
     }
 
