@@ -1,8 +1,10 @@
 use ahash::AHasher;
+use std::cmp::{max, min};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{BuildHasher, Hash, Hasher};
+use twox_hash::XxHash64;
 
-const NUM_HASHERS: usize = 3;
+const NUM_HASHES: usize = 3;
 
 #[derive(Default, Clone, Debug)]
 struct Elem {
@@ -30,24 +32,30 @@ impl Elem {
 }
 
 #[derive(Clone)]
-pub struct BLT {
+pub struct BLT<H: Hasher + Default + Clone = XxHash64> {
     capacity: usize,
+    k: i32,
     data: Vec<Elem>,
     seed: u64,
-    hasher: DefaultHasher,
-    // hasher: AHasher,
+    hasher: H,
 }
 
-impl BLT {
+impl<H: Hasher + Default + Clone> BLT<H> {
     pub fn new(capacity: usize, seed: u64) -> Self {
+        let mut k = 0;
+        while (1 << k) + 2 < capacity {
+            k += 1;
+        }
+
         let mut hasher = DefaultHasher::new();
-        // let mut hasher = ahash::RandomState::new().build_hasher(); // #hasher,
         hasher.write_u64(seed);
+        let new_capacity = (1 << k) + 2;
         Self {
-            capacity,
-            data: vec![Elem::default(); capacity],
+            capacity: new_capacity,
+            data: vec![Elem::default(); new_capacity],
             seed,
-            hasher,
+            hasher: H::default(),
+            k,
         }
     }
 
@@ -118,24 +126,24 @@ impl BLT {
         Ok(result)
     }
 
-    fn generate_idx(&mut self, elem: u64, elem_hash: u64) -> [usize; NUM_HASHERS] {
-        let mut result = [usize::MAX; NUM_HASHERS];
-        result[0] = (elem as usize % self.capacity) as usize;
-        let mut cur_hash = elem_hash;
-
-        for i in 1..NUM_HASHERS {
-            let mut pos = (cur_hash as usize % self.capacity) as usize;
-            while result.contains(&pos) {
-                cur_hash = self.compute_hash(cur_hash);
-                pos = (cur_hash as usize % self.capacity) as usize;
-            }
-            result[i] = pos;
+    fn generate_idx(&mut self, elem_hash: u64) -> [usize; NUM_HASHES] {
+        let mut pos0 = elem_hash & ((1 << self.k) - 1);
+        let mut pos1 = (elem_hash >> self.k) & ((1 << self.k) - 1);
+        let mut pos2 = (elem_hash >> 2 * self.k) & ((1 << self.k) - 1);
+        if pos1 >= pos0 {
+            pos1 += 1;
         }
-        result
+        if pos2 >= min(pos0, pos1) {
+            pos2 += 1;
+        }
+        if pos2 >= max(pos0, pos1) {
+            pos2 += 1;
+        }
+        [pos0 as usize, pos1 as usize, pos2 as usize]
     }
 
     fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
-        let pos_list = self.generate_idx(elem, elem_hash);
+        let pos_list = self.generate_idx(elem_hash);
 
         for &pos in &pos_list {
             self.data[pos].adjust(elem, elem_hash, count);
@@ -145,7 +153,7 @@ impl BLT {
 
     fn adjust_value(&mut self, elem: u64, count: i32) {
         let elem_hash = self.compute_hash(elem);
-        let pos_list = self.generate_idx(elem, elem_hash);
+        let pos_list = self.generate_idx(elem_hash);
 
         for &pos in &pos_list {
             self.data[pos].adjust(elem, elem_hash, count);
