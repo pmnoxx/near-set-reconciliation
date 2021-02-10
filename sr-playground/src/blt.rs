@@ -118,18 +118,18 @@ impl BLT {
         Ok(result)
     }
 
-    fn generate_idx(&mut self, elem: u64, elem_hash: u64) -> Vec<usize> {
-        let mut result: Vec<usize> = Vec::with_capacity(NUM_HASHERS);
-        result.push((elem as usize % self.capacity) as usize);
+    fn generate_idx(&mut self, elem: u64, elem_hash: u64) -> [usize; NUM_HASHERS] {
+        let mut result = [usize::MAX; NUM_HASHERS];
+        result[0] = (elem as usize % self.capacity) as usize;
         let mut cur_hash = elem_hash;
 
-        for _ in 1..NUM_HASHERS {
+        for i in 1..NUM_HASHERS {
             let mut pos = (cur_hash as usize % self.capacity) as usize;
             while result.contains(&pos) {
                 cur_hash = self.compute_hash(cur_hash);
                 pos = (cur_hash as usize % self.capacity) as usize;
             }
-            result.push(pos);
+            result[i] = pos;
         }
         result
     }
@@ -138,7 +138,7 @@ impl BLT {
     fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
         let pos_list = self.generate_idx(elem, elem_hash);
 
-        for &pos in pos_list.iter() {
+        for &pos in &pos_list {
             self.data[pos].adjust(elem, elem_hash, count);
             queue.push(pos);
         }
@@ -149,7 +149,7 @@ impl BLT {
 
         let pos_list = self.generate_idx(elem, elem_hash);
 
-        for pos in pos_list {
+        for &pos in &pos_list {
             self.data[pos].adjust(elem, elem_hash, count);
         }
     }
