@@ -134,7 +134,6 @@ impl BLT {
         result
     }
 
-    // TODO: how do we remove code duplication?
     fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
         let pos_list = self.generate_idx(elem, elem_hash);
 
@@ -146,7 +145,6 @@ impl BLT {
 
     fn adjust_value(&mut self, elem: u64, count: i32) {
         let elem_hash = self.compute_hash(elem);
-
         let pos_list = self.generate_idx(elem, elem_hash);
 
         for &pos in &pos_list {
