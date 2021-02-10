@@ -66,8 +66,8 @@ benchmark_group!(
     recover_bench_1e2_1e6,
     recover_bench_1e3_1e6,
     recover_bench_1e4_1e6,
-    recover_bench_1e5_1e6,
-    recover_bench_1e6_1e6
+    //recover_bench_1e5_1e6,
+    //recover_bench_1e6_1e6
 );
 
 benchmark_main!(benches);
