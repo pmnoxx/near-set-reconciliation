@@ -12,10 +12,22 @@ fn create_blt(elements: impl IntoIterator<Item = u64>, capacity: usize, seed: us
     blt
 }
 
-pub fn create_blt_bench(bench: &mut Bencher) {
+pub fn create_blt_bench_1e6_1e6(bench: &mut Bencher) {
     let mut seed = 0;
+    let count = 1e6 as u64;
+    let coef = if count <= 100 {
+        3.0
+    } else {
+        if count <= 1000 {
+            2.0
+        } else {
+            1.5
+        }
+    };
+
+    let capacity = (coef * (count as f64)) as usize;
     bench.iter(|| {
-        let _ = create_blt(0..1000000u64, 1024, seed);
+        let _ = create_blt(0..1000000u64, capacity, seed);
         seed += 1;
     });
 }
@@ -73,7 +85,7 @@ pub fn recover_bench(bench: &mut Bencher, count: usize, total: u64) {
 
 benchmark_group!(
     benches,
-    create_blt_bench,
+    create_blt_bench_1e6_1e6,
     recover_bench_1e1_1e6,
     recover_bench_1e2_1e6,
     recover_bench_1e3_1e6,

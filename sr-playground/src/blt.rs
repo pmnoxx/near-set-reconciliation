@@ -41,14 +41,14 @@ impl<H: Hasher + Default + Clone> BLT<H> {
             k += 1;
         }
 
-        let mut hasher = DefaultHasher::new();
+        let mut hasher = H::default();
         hasher.write_u64(seed);
         let new_capacity = (1 << k) + 2;
         Self {
             capacity: new_capacity,
             data: vec![Elem::default(); new_capacity],
             seed,
-            hasher: H::default(),
+            hasher,
             k,
         }
     }
