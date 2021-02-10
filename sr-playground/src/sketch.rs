@@ -142,8 +142,8 @@ impl Sketch {
 mod tests {
     use crate::sketch::Sketch;
 
-    fn create_sketch(elements: impl IntoIterator<Item = u64>) -> Sketch {
-        let mut sketch = Sketch::new(400);
+    fn create_sketch(elements: impl IntoIterator<Item = u64>, capacity: usize) -> Sketch {
+        let mut sketch = Sketch::new(capacity);
         for item in elements.into_iter() {
             sketch.add(item);
         }
@@ -154,6 +154,6 @@ mod tests {
     fn create_sketch_alice() {
         let set = 1000000_3_00000u64..1000000_301000u64;
 
-        create_sketch(set);
+        assert_eq!(1000, create_sketch(set, 2048).recover().unwrap().len())
     }
 }
