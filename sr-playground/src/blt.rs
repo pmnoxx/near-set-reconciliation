@@ -1,8 +1,8 @@
 use ahash::AHasher;
 use std::cmp::{max, min};
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{BuildHasher, Hash, Hasher};
-use twox_hash::XxHash64;
+use std::hash::Hasher;
+// use twox_hash::XxHash64;
 
 const NUM_HASHES: usize = 3;
 
@@ -127,7 +127,7 @@ impl<H: Hasher + Default + Clone> BLT<H> {
     }
 
     fn generate_idx(&mut self, elem_hash: u64) -> [usize; NUM_HASHES] {
-        let mut pos0 = elem_hash & ((1 << self.k) - 1);
+        let pos0 = elem_hash & ((1 << self.k) - 1);
         let mut pos1 = (elem_hash >> self.k) & ((1 << self.k) - 1);
         let mut pos2 = (elem_hash >> 2 * self.k) & ((1 << self.k) - 1);
         if pos1 >= pos0 {
