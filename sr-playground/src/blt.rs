@@ -1,8 +1,6 @@
-use ahash::AHasher;
 use std::cmp::{max, min};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{BuildHasher, Hash, Hasher};
-use twox_hash::XxHash64;
 
 const NUM_HASHES: usize = 3;
 
@@ -32,7 +30,7 @@ impl Elem {
 }
 
 #[derive(Clone)]
-pub struct BLT<H: Hasher + Default + Clone = XxHash64> {
+pub struct BLT<H: Hasher + Default + Clone = DefaultHasher> {
     capacity: usize,
     k: i32,
     data: Vec<Elem>,
@@ -86,6 +84,25 @@ impl<H: Hasher + Default + Clone> BLT<H> {
     }
 
     pub fn recover(&mut self) -> Result<Vec<u64>, &'static str> {
+        let (result, ok) = self.try_recover();
+
+        if !ok {
+            for i in 0..self.capacity {
+                if self.data[i].count != 0 {
+                    println!(
+                        "{} {:?} {}",
+                        i,
+                        self.data[i],
+                        self.compute_hash(self.data[i].xor_elem)
+                    );
+                }
+            }
+            return Err("unable to recover result");
+        }
+        return Ok(result);
+    }
+
+    pub fn try_recover(&mut self) -> (Vec<u64>, bool) {
         let mut result = Vec::with_capacity(self.capacity);
         let mut to_check = Vec::new();
         for i in 0..self.capacity {
@@ -110,20 +127,10 @@ impl<H: Hasher + Default + Clone> BLT<H> {
         }
         for i in 0..self.capacity {
             if self.data[i].count != 0 {
-                for i in 0..self.capacity {
-                    if self.data[i].count != 0 {
-                        println!(
-                            "{} {:?} {}",
-                            i,
-                            self.data[i],
-                            self.compute_hash(self.data[i].xor_elem)
-                        );
-                    }
-                }
-                return Err("unable to recover result");
+                return (result, false);
             }
         }
-        Ok(result)
+        (result, true)
     }
 
     fn generate_idx(&mut self, elem_hash: u64) -> [usize; NUM_HASHES] {
