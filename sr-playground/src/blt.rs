@@ -25,7 +25,8 @@ impl Elem {
 }
 
 #[derive(Clone)]
-pub struct BLT<H: Hasher + Default + Clone = DefaultHasher> {
+//pub struct BLT<H: Hasher + Default + Clone = DefaultHasher> {
+pub struct BLT<H: Hasher + Default + Clone = AHasher> {
     capacity: usize,
     k: i32,
     data: Vec<Elem>,
@@ -105,6 +106,9 @@ impl<H: Hasher + Default + Clone> BLT<H> {
 
             while let Some(i) = to_check.pop() {
                 let elem = self.data[i].xor_elem;
+                if elem == 0 && self.data[i].xor_hash == 0 {
+                    continue;
+                }
                 let elem_hash = self.compute_hash(elem);
                 if elem_hash != self.data[i].xor_hash {
                     continue;
