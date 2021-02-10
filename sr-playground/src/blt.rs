@@ -1,31 +1,26 @@
+use ahash::AHasher;
 use std::cmp::{max, min};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{BuildHasher, Hash, Hasher};
+use twox_hash::XxHash64;
 
 const NUM_HASHES: usize = 3;
 
 #[derive(Default, Clone, Debug)]
 struct Elem {
-    count: i32,
     xor_elem: u64,
     xor_hash: u64,
 }
 
 impl Elem {
-    fn adjust(&mut self, elem: u64, elem_hash: u64, count: i32) {
-        self.count += count;
+    fn adjust(&mut self, elem: u64, elem_hash: u64) {
         self.xor_elem ^= elem;
         self.xor_hash ^= elem_hash;
     }
 
     fn merge(&mut self, rhs: &Elem) {
-        self.count -= rhs.count;
         self.xor_elem ^= rhs.xor_elem;
         self.xor_hash ^= rhs.xor_hash;
-    }
-
-    fn is_one(&self) -> bool {
-        self.count == -1 || self.count == 1
     }
 }
 
@@ -58,11 +53,11 @@ impl<H: Hasher + Default + Clone> BLT<H> {
     }
 
     pub fn add(&mut self, elem: u64) {
-        self.adjust(elem, 1)
+        self.adjust(elem)
     }
 
     pub fn remove(&mut self, elem: u64) {
-        self.adjust(elem, -1)
+        self.adjust(elem)
     }
 
     pub fn compute_hash(&self, elem: u64) -> u64 {
@@ -71,8 +66,8 @@ impl<H: Hasher + Default + Clone> BLT<H> {
         h.finish()
     }
 
-    fn adjust(&mut self, elem: u64, count: i32) {
-        self.adjust_value(elem, count)
+    fn adjust(&mut self, elem: u64) {
+        self.adjust_value(elem);
     }
 
     pub fn merge(&mut self, rhs: &BLT) {
@@ -88,7 +83,7 @@ impl<H: Hasher + Default + Clone> BLT<H> {
 
         if !ok {
             for i in 0..self.capacity {
-                if self.data[i].count != 0 {
+                if self.data[i].xor_elem != 0 {
                     println!(
                         "{} {:?} {}",
                         i,
@@ -104,17 +99,11 @@ impl<H: Hasher + Default + Clone> BLT<H> {
 
     pub fn try_recover(&mut self) -> (Vec<u64>, bool) {
         let mut result = Vec::with_capacity(self.capacity);
-        let mut to_check = Vec::new();
+        let mut to_check = Vec::default();
         for i in 0..self.capacity {
-            if !self.data[i].is_one() {
-                continue;
-            }
             to_check.push(i);
 
             while let Some(i) = to_check.pop() {
-                if !self.data[i].is_one() {
-                    continue;
-                }
                 let elem = self.data[i].xor_elem;
                 let elem_hash = self.compute_hash(elem);
                 if elem_hash != self.data[i].xor_hash {
@@ -122,11 +111,11 @@ impl<H: Hasher + Default + Clone> BLT<H> {
                 }
 
                 result.push(elem);
-                self.adjust_value2(elem, elem_hash, -self.data[i].count, &mut to_check);
+                self.adjust_value2(elem, elem_hash, &mut to_check);
             }
         }
         for i in 0..self.capacity {
-            if self.data[i].count != 0 {
+            if self.data[i].xor_elem != 0 {
                 return (result, false);
             }
         }
@@ -149,21 +138,21 @@ impl<H: Hasher + Default + Clone> BLT<H> {
         [pos0 as usize, pos1 as usize, pos2 as usize]
     }
 
-    fn adjust_value2(&mut self, elem: u64, elem_hash: u64, count: i32, queue: &mut Vec<usize>) {
+    fn adjust_value2(&mut self, elem: u64, elem_hash: u64, queue: &mut Vec<usize>) {
         let pos_list = self.generate_idx(elem_hash);
 
         for &pos in &pos_list {
-            self.data[pos].adjust(elem, elem_hash, count);
+            self.data[pos].adjust(elem, elem_hash);
             queue.push(pos);
         }
     }
 
-    fn adjust_value(&mut self, elem: u64, count: i32) {
+    fn adjust_value(&mut self, elem: u64) {
         let elem_hash = self.compute_hash(elem);
         let pos_list = self.generate_idx(elem_hash);
 
         for &pos in &pos_list {
-            self.data[pos].adjust(elem, elem_hash, count);
+            self.data[pos].adjust(elem, elem_hash);
         }
     }
 }
