@@ -51,7 +51,7 @@ impl Sketch {
         self.adjust(elem, -1)
     }
 
-    fn compute_hash(elem: u64) -> u64 {
+    pub fn compute_hash(elem: u64) -> u64 {
         let mut h = DefaultHasher::new();
         elem.hash(&mut h);
         h.finish()
