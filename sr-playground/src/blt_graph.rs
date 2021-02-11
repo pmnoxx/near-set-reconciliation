@@ -124,23 +124,32 @@ mod test {
         for i in 10..20 {
             // Each item is one round trip
             if blt_b.blts[i].capacity > max(a.edges.len(), b.edges.len()) / 10 {
+                // 2 round trips
+
                 // Alice send list of all hashes to Bob
                 let hashes_from_a: Vec<u64> = Vec::from_iter(blt_a.h2e.keys().cloned().into_iter());
 
                 // Bob responds with edges for Alice and with that he needs
-                let (edges_for_a, _) = blt_b.split(&hashes_from_a);
+                let (_, edges_b_needs) = blt_b.split(&hashes_from_a);
                 // and edges he knows about
                 let hashes_from_b: Vec<u64> = Vec::from_iter(blt_b.h2e.keys().cloned().into_iter());
 
-                // Alice adds edges from Bob
-                a.add_edges(&edges_for_a);
-                blt_a.add_edges2(&edges_for_a);
+                // Alice knows which edges she is missing.
+                let (_, edges_a_needs) = blt_a.split(&hashes_from_b);
 
-                let (edges_for_b, _) = blt_a.split(&hashes_from_b);
+                //  Alice sends edges which Bob is missing
+                let edges_for_b = blt_a.get_edges(&edges_b_needs);
 
                 // Bob applies edges
                 b.add_edges(&edges_for_b);
                 blt_b.add_edges2(&edges_for_b);
+
+                // Bob returns edges Alice needs
+                let edges_for_a = blt_b.get_edges(&edges_a_needs);
+
+                // Alice adds edges from Bob
+                a.add_edges(&edges_for_a);
+                blt_a.add_edges2(&edges_for_a);
 
                 println!(
                     "FULL SYNC {} capacity: {} total: {}ms a.edges: {} b.edges: {} added_a: {} added_b: {}",
@@ -154,6 +163,7 @@ mod test {
                 );
                 break;
             }
+            // 1 round trip
 
             // Alice asks BOB to give her Bob's BLT[i] and gets response.
             let mut bob_response = blt_b.blts[i].clone();
@@ -193,5 +203,6 @@ mod test {
             }
         }
         assert_eq!(a.edges.len(), b.edges.len());
+        assert!(a.edges.len() as f64 >= common as f64 + 1.9 * (one_side as f64));
     }
 }
