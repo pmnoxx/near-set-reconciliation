@@ -1,8 +1,6 @@
 use ahash::AHasher;
 use std::cmp::{max, min};
-use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
-// use twox_hash::XxHash64;
 
 const NUM_HASHES: usize = 3;
 
@@ -25,9 +23,8 @@ impl Elem {
 }
 
 #[derive(Clone)]
-//pub struct BLT<H: Hasher + Default + Clone = DefaultHasher> {
 pub struct BLT<H: Hasher + Default + Clone = AHasher> {
-    capacity: usize,
+    pub capacity: usize,
     k: i32,
     data: Vec<Elem>,
     seed: u64,

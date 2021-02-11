@@ -10,6 +10,7 @@ edition = "2018"
 # minisketch-rs = "0.1.9"
 ahash = "0.6.3"
 twox-hash = "1.6.0"
+rand = "0.8.3"
 
 [[bench]]
 name = "new_algo"
